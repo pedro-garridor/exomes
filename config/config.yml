@@ -1,0 +1,11 @@
+# GATK DNA-Seq Singularity workflow - configuration file
+# Copyright (C) 2024, Pedro Garrido Rodríguez
+
+# This program comes with ABSOLUTELY NO WARRANTY.
+
+input_dir: ''
+out_dir: ''
+
+ref_fa: ''
+dbSNP: ''
+bed: '/opt/workflow/resources/SureSelect_Human_AII_Exon_V6_coverage_hg38.bed'

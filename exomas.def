@@ -1,0 +1,160 @@
+Bootstrap: library
+From: ubuntu:22.04
+
+%post
+    sed -i 's/us.archive.ubuntu.com/es.archive.ubuntu.com/g' /etc/apt/sources.list
+    apt update && apt install -y software-properties-common
+    add-apt-repository "deb http://es.archive.ubuntu.com/ubuntu/ focal universe multiverse"
+    add-apt-repository "deb http://es.archive.ubuntu.com/ubuntu/ focal-updates universe multiverse"
+    apt update && apt install -y bcftools openjdk-11-jre picard-tools python3 samtools snakemake wget tabix git
+    cd /opt
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    mkdir /root/.conda
+    bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/miniconda3
+    rm Miniconda3-latest-Linux-x86_64.sh
+    wget https://github.com/broadinstitute/gatk/releases/download/4.4.0.0/gatk-4.4.0.0.zip
+    unzip gatk-4.4.0.0.zip
+    rm gatk-4.4.0.0.zip
+    wget https://bitbucket.org/kokonech/qualimap/downloads/qualimap_v2.2.1.zip
+    unzip qualimap_v2.2.1.zip
+    rm qualimap_v2.2.1.zip
+    wget https://snpeff.blob.core.windows.net/versions/snpEff_latest_core.zip
+    unzip -u snpEff_latest_core.zip
+    rm snpEff_latest_core.zip
+    git clone https://github.com/pedro-garridor/exomes.git
+    cd 
+    # java -jar snpEff/snpEff.jar download GRCh38.99 
+
+%environment
+    PATH=$PATH:/opt/miniconda3/bin
+
+%runscript
+    VERSION='2.1.0+20220727'
+
+    echo ''
+    echo 'GATK DNA-Seq Singularity workflow'
+    echo 'Copyright (C) 2024, Pedro Garrido Rodríguez'
+    echo ''
+    echo 'This program is distributed in the hope that it will be useful,'
+    echo 'but WITHOUT ANY WARRANTY; without even the implied warranty of'
+    echo 'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.'
+    echo ''
+    echo "Version $VERSION"
+    echo ''
+
+    BED='/opt/workflow/resources/SureSelect_Human_AII_Exon_V6_coverage_hg38.bed'
+    THREADS=$(nproc --all)
+
+    if [ "$#" -eq 0 ]; then
+        echo "No arguments supplied."
+        echo "Use singularity run exomas.sif -h to get help."
+        exit 2
+    fi
+
+    while [ $# -gt 0 ]; do
+        case $1 in 
+            -d|--dbsnp)
+                DBSNP="$2"
+                shift
+                shift
+                ;;
+            -i|--input)
+                INPUT_DIR="$2"
+                shift
+                shift
+                ;;
+            -o|--output)
+                OUT_DIR="$2"
+                shift
+                shift
+                ;;
+            -r|--reference)
+                REF="$2"
+                shift
+                shift
+                ;;
+            --bed)
+                BED="$2"
+                shift
+                shift
+                ;;
+            -n|--dryrun)
+                DRYRUN=1
+                shift
+                ;;
+            -t|--threads)
+                THREADS="$2"
+                shift
+                shift
+                ;;
+            -v|--version)
+                exit
+                shift
+                ;;
+            -*|--*)
+                echo "Unknown option $1"
+                exit 1
+                ;;
+            *)
+                echo "Unknown argument $1"
+                exit 1
+                ;;
+        esac
+    done
+
+    if [ -z $DBSNP ] || [ -z $PARENT_DIR ] || [ -z $OUT_DIR ] || [ -z $REF ]; then
+        echo "Arguments -d, -i, -o and -r are required."
+        echo "Use singularity run exomas.sif -h to get help."
+        exit 2
+    fi
+
+    if [ $DRYRUN ]; then
+        snakemake -s /opt/intONT/workflow/Snakefile -n \
+            --config \
+            input_dir=$INPUT_DIR \
+            out_dir=$OUT_DIR \
+            ref=$REF \
+            dbSNP=$DBSNP \
+            bed=$BED \
+    else
+        snakemake -s /opt/intONT/workflow/Snakefile -kpj $THREADS \
+            --use-conda \
+            --config \
+            input_dir=$INPUT_DIR \
+            out_dir=$OUT_DIR \
+            ref=$REF \
+            dbSNP=$DBSNP \
+            bed=$BED \
+    fi
+
+%labels
+    Author: Pedro Garrido Rodríguez
+    Contact: pedro (dot) garridor (at) outlook (dot) es
+    Version: 1.0.0
+
+%help
+
+    GATK DNA-Seq Singularity workflow
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+    Version 1.0.0
+
+
+    Usage: bash intONT.sh [arguments]
+
+    -h, --help                                  show this help message
+
+    Required:
+        -d, --dbsnp FILE                        dbSNP VCF file
+        -i, --input FILE                        FASTQ folder
+        -o, --output FILE                       output folder
+        -r  --reference FILE                    reference genome (GRCh38 only)
+    
+    Optional arguments:
+        --bed FILE                              BED file
+        -t [1]                                  threads
+        -n                                      perform a dry run
+    

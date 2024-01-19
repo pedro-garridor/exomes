@@ -1,0 +1,19 @@
+include: 'rules/bwa.smk'
+include: 'rules/gatkSNP.smk'
+include: 'rules/snpEff.smk'
+include: 'rules/SureSelect.smk'
+
+SAMPLES = glob_wildcards(config['input_dir']'/FASTQ/{sample,[^/]+}').sample
+
+rule all:
+	input:
+		tbi=expand(config['out_dir'] + 'results/VCF/{sample}.vcf.gz.tbi', sample=SAMPLES)
+
+onsuccess:
+	print(' ')
+	print('[*] Removing temp folders...')
+	print(' ')
+	shell('rm -rf sorted RG duplicates HC CNN FVT filtered rs')
+	print(' ')
+	print(' [*] Workflow finished!')
+	print(' ')
