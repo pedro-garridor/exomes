@@ -1,3 +1,12 @@
+'''
+GATK DNA-Seq Singularity workflow
+Copyright (C) 2024, Pedro Garrido Rodríguez
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+'''
+
 # Workflow for VCF annotation with snpEff
 
 rule snpsift:
